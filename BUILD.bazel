@@ -1,0 +1,42 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "libusb_linux_config",
+    hdrs = ["linux/config.h"],
+)
+
+cc_library(
+    name = "default_libusb_config",
+    hdrs = ["include/config.h"],
+    includes = ["include"],
+    deps = select({
+        "@platforms//os:windows": ["@libusb_sources//:libusb_msvc_config"],
+        "@platforms//os:macos": ["@libusb_sources//:libusb_macos_config"],
+        "@platforms//os:linux": ["//:libusb_linux_config"],
+        "//conditions:default": [],
+    }),
+)
+
+alias(
+    name = "libusb",
+    actual = "@libusb_sources//:libusb",
+)
+
+alias(
+    name = "libusb_dynamic",
+    actual = "@libusb_sources//:libusb_dynamic",
+)
