@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Be careful about only depending on :libusb_core without specifying
+# :libusb in dynamic_deps! If you forget, libusb will be statically linked.
 cc_library(
-    name = "libusb",
+    name = "libusb_core",
     srcs = glob(["libusb/*.c"]),
     visibility = ["//visibility:public"],
     deps = select({
@@ -28,7 +30,7 @@ cc_library(
 )
 
 cc_shared_library(
-    name = "libusb_dynamic",
+    name = "libusb",
     # Always use exactly this name.
     shared_lib_name = select({
         "@platforms//os:macos": "libusb-1.0.dylib",
@@ -40,7 +42,7 @@ cc_shared_library(
         "@platforms//os:windows": "libusb/libusb-1.0.def",
         "//conditions:default": None,
     }),
-    deps = [":libusb"],
+    deps = [":libusb_core"],
 )
 
 label_flag(

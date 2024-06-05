@@ -13,23 +13,21 @@ projects are not explicitly supported.
 Add rules_libusb to your `MODULE.bazel` file:
 ```
 bazel_dep(name = "rules_libusb", version="0.1.0-rc1")
+
+libusb = use_extension("@rules_libusb//:extensions.bzl", "libusb")
+# Versioning constraints are optional.
+libusb.source_release(min_version = "1.0.27")
+use_repo(libusb, "libusb")
 ```
 
-Then add `@libusb//:libusb` in `dynamic_deps` to the tool that uses it:
+Then add to the tool that requires libusb:
 ```
 cc_binary(
     name = "my_tool",
     srcs = ["main.cpp"],
-    deps = ["@rules_libusb//:libusb"],
-    dynamic_deps = ["@rules_libusb//:libusb_dynamic"],
+    deps = ["@libusb//:libusb_core"],  # Required for headers.
+    dynamic_deps = ["@libusb//:libusb"],  # Link against shared lib.
 )
-```
-
-If you have explicit libusb versioning requirements, you may add them to your
-`MODULE.bazel`:
-```
-libusb = use_extension("@rules_libusb//:extensions.bzl", "libusb")
-libusb.source_release(min_version = "1.0.27")
 ```
 
 Note: `source_release` constraints follow bzlmod behavior of minimal version
@@ -39,5 +37,5 @@ selection.
 
 To build this repo, run:
 ```
-bazel build //:libusb
+bazel build @libusb//:libusb
 ```

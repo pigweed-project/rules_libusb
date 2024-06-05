@@ -9,6 +9,4 @@ bazel_dep(name = "platforms", version = "0.0.8")
 # this in your project's MODULE.bazel.
 libusb = use_extension("@rules_libusb//:extensions.bzl", "libusb")
 libusb.source_release(min_version = "1.0.20-rc1")
-
-# rules_libusb actually needs to be able to reference @libusb_sources.
-use_repo(libusb, "libusb_sources")
+use_repo(libusb, "libusb")

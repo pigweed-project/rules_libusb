@@ -72,7 +72,7 @@ def _libusb_impl(module_ctx):
             fail("Minimum supported libusb version for", min_versions[version_to_use], "is", version_to_use, "but", max_versions[v], "require at most", v)
 
     http_archive(
-        name = "libusb_sources",
+        name = "libusb",
         urls = ["https://github.com/libusb/libusb/releases/download/v{}/libusb-{}.tar.bz2".format(version_to_use, version_to_use)],
         build_file = "@rules_libusb//:libusb.BUILD",
         strip_prefix = "libusb-" + version_to_use,
