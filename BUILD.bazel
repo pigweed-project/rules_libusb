@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -29,4 +31,17 @@ cc_library(
         "@platforms//os:linux": ["//:libusb_linux_config"],
         "//conditions:default": [],
     }),
+)
+
+# Forces libusb to always be dynamically linked. This defaults to True since
+# libusb is LGPL and that is usually the right thing. Be cautious when
+# statically linking and distributing binaries, as libusb is LGPL.
+bool_flag(
+    name = "force_dynamic_linkage",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "force_dynamic_linkage_enabled",
+    flag_values = {":force_dynamic_linkage": "True"},
 )

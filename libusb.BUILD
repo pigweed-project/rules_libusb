@@ -12,26 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Be careful about only depending on :libusb_core without specifying
-# :libusb in dynamic_deps! If you forget, libusb will be statically linked.
-cc_library(
-    name = "libusb_core",
-    srcs = glob(["libusb/*.c"]),
+load("@rules_license//rules:license.bzl", "license")
+
+package(
+    default_applicable_licenses = [":license"],
+    default_visibility = ["//visibility:private"],
+)
+
+license(
+    name = "license",
+    package_name = "libusb",
+    license_kinds = ["@rules_license//licenses/spdx:LGPL-2.1"],
+    license_text = "COPYING",
+)
+
+alias(
+    name = "libusb",
+    actual = select({
+        "@rules_libusb//:force_dynamic_linkage_enabled": ":libusb_force_dynamic",
+        "//conditions:default": ":libusb_core",
+    }),
     visibility = ["//visibility:public"],
-    deps = select({
-        "@platforms//os:linux": [":libusb_linux"],
-        "@platforms//os:macos": [":libusb_macos"],
-        "@platforms//os:windows": [":libusb_windows"],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }) + [
-        ":libusb_config",
-        ":libusb_headers",
-    ],
 )
 
 cc_shared_library(
-    name = "libusb",
-    # Always use exactly this name.
+    name = "libusb_dynamic",
+    # Always use exactly these names.
     shared_lib_name = select({
         "@platforms//os:macos": "libusb-1.0.dylib",
         "@platforms//os:windows": "libusb-1.0.dll",
@@ -43,6 +49,32 @@ cc_shared_library(
         "//conditions:default": None,
     }),
     deps = [":libusb_core"],
+)
+
+# This intermediate helper forces libusb to be dynamically linked.
+cc_library(
+    name = "libusb_force_dynamic",
+    srcs = [":libusb_dynamic"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":libusb_config",
+        ":libusb_headers",
+    ],
+)
+
+cc_library(
+    name = "libusb_core",
+    srcs = glob(["libusb/*.c"]),
+    visibility = ["//visibility:private"],
+    deps = select({
+        "@platforms//os:linux": [":libusb_linux"],
+        "@platforms//os:macos": [":libusb_macos"],
+        "@platforms//os:windows": [":libusb_windows"],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }) + [
+        ":libusb_config",
+        ":libusb_headers",
+    ],
 )
 
 label_flag(
