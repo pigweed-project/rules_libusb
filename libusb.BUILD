@@ -176,6 +176,7 @@ cc_library(
     srcs = glob(["libusb/os/darwin_*.c"]),
     hdrs = glob(["libusb/os/darwin_*.h"]),
     linkopts = [
+        "-framework CoreFoundation",
         "-framework IOKit",
         "-framework Security",
     ],
