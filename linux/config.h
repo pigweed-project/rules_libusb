@@ -40,6 +40,19 @@
 
 #define PLATFORM_POSIX 1
 
+/* Required for libusb < 1.0.24. */
+#define THREADS_POSIX 1
+#define POLL_NFDS_TYPE nfds_t
+#define USBI_TIMERFD_AVAILABLE 1
+#define OS_LINUX 1
+#define HAVE_LINUX_FILTER_H 1
+#define HAVE_LINUX_NETLINK_H 1
+#define HAVE_POLL_H 1
+#define HAVE_SYSLOG_FUNC 1
+#define HAVE_SYSLOG_H 1
+#define HAVE_SYS_SOCKET_H 1
+#define HAVE_GETTIMEOFDAY 1
+
 #define PRINTF_FORMAT(a, b) __attribute__ ((__format__ (__printf__, a, b)))
 #define STDC_HEADERS 1
 
@@ -49,5 +62,6 @@
 #ifndef HAVE_LIBUDEV
 #if __has_include(<libudev.h>)
 #define HAVE_LIBUDEV 1
+#define USE_UDEV 1
 #endif  // __has_include(<libudev.h>)
 #endif  // HAVE_LIBUDEV
