@@ -169,6 +169,9 @@ cc_library(
         ":libusb_headers",
         ":libusb_posix",
     ],
+    # linux_netlink.c passes a buffer pointer (`unsigned char*`) to a function
+    # expecting `char*`.
+    copts = ["-Wno-pointer-sign"],
 )
 
 cc_library(
