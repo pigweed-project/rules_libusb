@@ -75,6 +75,10 @@ cc_library(
         ":libusb_config",
         ":libusb_headers",
     ],
+    linkopts = select({
+        "@platforms//os:windows": ["-DEFAULTLIB:AdvAPI32.Lib"],
+        "//conditions:default": [],
+    }),
 )
 
 label_flag(
@@ -108,8 +112,14 @@ cc_library(
 
 cc_library(
     name = "libusb_windows",
-    srcs = glob(["libusb/os/*_windows.c"]),
-    hdrs = glob(["libusb/os/*_windows.h"]),
+    srcs = glob([
+        "libusb/os/*_windows.c",
+        "libusb/os/windows_*.c",
+    ]),
+    hdrs = glob([
+        "libusb/os/*_windows.h",
+        "libusb/os/windows_*.h",
+    ]),
     visibility = ["//visibility:private"],
     deps = [
         ":libusb_config",
