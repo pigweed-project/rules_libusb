@@ -1,0 +1,13 @@
+module(name = "rules_libusb_basic_example")
+
+bazel_dep(name = "rules_libusb")
+
+# DO NOT copy this into your project. This allows this repository to reference
+# itself.
+local_path_override(
+    module_name = "rules_libusb",
+    path = "../..",
+)
+
+libusb = use_extension("@rules_libusb//:extensions.bzl", "libusb")
+use_repo(libusb, "libusb")
