@@ -66,11 +66,17 @@ cc_library(
     name = "libusb_core",
     srcs = glob(["libusb/*.c"]),
     visibility = ["//visibility:private"],
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "@platforms//os:macos": [],
+        "@platforms//os:windows": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = select({
         "@platforms//os:linux": [":libusb_linux"],
         "@platforms//os:macos": [":libusb_macos"],
         "@platforms//os:windows": [":libusb_windows"],
-        "//conditions:default": ["@platforms//:incompatible"],
+        "//conditions:default": [],
     }) + [
         ":libusb_config",
         ":libusb_headers",
