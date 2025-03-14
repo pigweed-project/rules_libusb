@@ -12,13 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "string_flag")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "libusb_linux_config",
     hdrs = ["linux/config.h"],
+    defines = select({
+        ":use_udev": ["_RULES_LIBUSB_USE_UDEV=1"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
@@ -44,4 +49,23 @@ bool_flag(
 config_setting(
     name = "force_dynamic_linkage_enabled",
     flag_values = {":force_dynamic_linkage": "True"},
+)
+
+string_flag(
+    name = "linux_backend",
+    build_setting_default = "netlink",
+    values = [
+        "udev",
+        "netlink",
+    ],
+)
+
+config_setting(
+    name = "use_udev",
+    flag_values = {":linux_backend": "udev"},
+)
+
+config_setting(
+    name = "use_netlink",
+    flag_values = {":linux_backend": "netlink"},
 )

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_shared_library.bzl", "cc_shared_library")
 load("@rules_license//rules:license.bzl", "license")
 
 package(
@@ -65,13 +67,17 @@ cc_library(
 cc_library(
     name = "libusb_core",
     srcs = glob(["libusb/*.c"]),
-    visibility = ["//visibility:private"],
+    linkopts = select({
+        "@platforms//os:windows": ["-DEFAULTLIB:AdvAPI32.Lib"],
+        "//conditions:default": [],
+    }),
     target_compatible_with = select({
         "@platforms//os:linux": [],
         "@platforms//os:macos": [],
         "@platforms//os:windows": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
+    visibility = ["//visibility:private"],
     deps = select({
         "@platforms//os:linux": [":libusb_linux"],
         "@platforms//os:macos": [":libusb_macos"],
@@ -81,10 +87,6 @@ cc_library(
         ":libusb_config",
         ":libusb_headers",
     ],
-    linkopts = select({
-        "@platforms//os:windows": ["-DEFAULTLIB:AdvAPI32.Lib"],
-        "//conditions:default": [],
-    }),
 )
 
 label_flag(
@@ -144,24 +146,6 @@ cc_library(
     ],
 )
 
-# TODO: Consider upstreaming a build-system-independent method for detecting
-# udev vs netlink.
-_GENERATED_UDEV_OR_NETLINK = """
-#include "config.h"
-
-#if HAVE_LIBUDEV
-#include "libusb/os/linux_udev.c"
-#else
-#include "libusb/os/linux_netlink.c"
-#endif  // HAVE_LIBUDEV
-"""
-
-genrule(
-    name = "autodetect_udev",
-    outs = ["udev_or_netlink.c"],
-    cmd = "echo '{}' > $@".format(_GENERATED_UDEV_OR_NETLINK),
-)
-
 cc_library(
     name = "libusb_linux",
     srcs = glob(
@@ -170,24 +154,26 @@ cc_library(
             "libusb/os/linux_netlink.c",
             "libusb/os/linux_udev.c",
         ],
-    ) + [
-        "udev_or_netlink.c",
-    ],
-    hdrs = glob(["libusb/os/linux_*.h"]) + [
-        # These are listed as `hdrs` because they're selected by
-        # an `#include` in the generated `udev_or_netlink.c`.
-        "libusb/os/linux_netlink.c",
-        "libusb/os/linux_udev.c",
-    ],
+    ) + select({
+        "@rules_libusb//:use_udev": ["libusb/os/linux_udev.c"],
+        "@rules_libusb//:use_netlink": ["libusb/os/linux_netlink.c"],
+    }),
+    hdrs = glob(["libusb/os/linux_*.h"]),
+    # linux_netlink.c passes a buffer pointer (`unsigned char*`) to a function
+    # expecting `char*`.
+    copts = ["-Wno-pointer-sign"],
+    linkopts = select({
+        "@rules_libusb//:use_udev": ["-ludev"],
+        # When using netlink, `-lnl` doesn't appear to be necessary (adding it
+        # makes gcc complain the library can't be found).
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:private"],
     deps = [
         ":libusb_config",
         ":libusb_headers",
         ":libusb_posix",
     ],
-    # linux_netlink.c passes a buffer pointer (`unsigned char*`) to a function
-    # expecting `char*`.
-    copts = ["-Wno-pointer-sign"],
 )
 
 cc_library(

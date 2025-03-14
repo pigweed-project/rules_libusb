@@ -40,7 +40,7 @@
 
 #define PLATFORM_POSIX 1
 
-/* Required for libusb < 1.0.24. */
+// Required for libusb < 1.0.24.
 #define THREADS_POSIX 1
 #define POLL_NFDS_TYPE nfds_t
 #define USBI_TIMERFD_AVAILABLE 1
@@ -58,10 +58,20 @@
 
 #define _GNU_SOURCE 1
 
-// Explicitly define HAVE_LIBUDEV to prevent auto-detection.
-#ifndef HAVE_LIBUDEV
-#if __has_include(<libudev.h>)
+// Infer UDEV support from the Bazel build defines.
+#if defined(_RULES_LIBUSB_USE_UDEV) && _RULES_LIBUSB_USE_UDEV
 #define HAVE_LIBUDEV 1
 #define USE_UDEV 1
-#endif  // __has_include(<libudev.h>)
-#endif  // HAVE_LIBUDEV
+#endif  // defined(_RULES_LIBUSB_USE_UDEV) && _RULES_LIBUSB_USE_UDEV
+
+#if defined(HAVE_LIBUDEV) && HAVE_LIBUDEV
+// Check that libudev header can be found.
+#if !__has_include(<libudev.h>)
+#error "--@rules_libusb//:linux_backend=udev enabled, but no <libudev.h> header found."
+#endif  // !__has_include(<libudev.h>)
+#else
+// Check that netlink header can be found.
+#if !__has_include(<linux/netlink.h>)
+#error "--@rules_libusb//:linux_backend=netlink enabled, but no <linux/netlink.h> header found."
+#endif  // !__has_include(<libudev.h>)
+#endif  // defined(HAVE_LIBUDEV) && HAVE_LIBUDEV
