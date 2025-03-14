@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_import.bzl", "cc_import")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_shared_library.bzl", "cc_shared_library")
 load("@rules_license//rules:license.bzl", "license")
@@ -37,15 +38,21 @@ alias(
     visibility = ["//visibility:public"],
 )
 
-cc_shared_library(
+alias(
     name = "libusb_dynamic",
+    actual = ":libusb-1.0",
+    visibility = ["//visibility:public"],
+)
+
+cc_shared_library(
+    name = "libusb-1.0",
     # Always use exactly these names.
     shared_lib_name = select({
         "@platforms//os:macos": "libusb-1.0.dylib",
         "@platforms//os:windows": "libusb-1.0.dll",
         "//conditions:default": "libusb-1.0.so",
     }),
-    visibility = ["//visibility:public"],
+    visibility = ["//visibility:private"],
     win_def_file = select({
         "@platforms//os:windows": "libusb/libusb-1.0.def",
         "//conditions:default": None,
@@ -53,10 +60,20 @@ cc_shared_library(
     deps = [":libusb_core"],
 )
 
+# This is needed for Windows to be able to properly link. If this
+# is omitted, the .if.lib will never end up in the link invocation.
+filegroup(
+    name = "libusb_interface_lib",
+    srcs = [":libusb-1.0"],
+    output_group = "interface_library",
+    visibility = ["//visibility:private"],
+)
+
 # This intermediate helper forces libusb to be dynamically linked.
-cc_library(
+cc_import(
     name = "libusb_force_dynamic",
-    srcs = [":libusb_dynamic"],
+    interface_library = ":libusb_interface_lib",
+    shared_library = ":libusb_dynamic",
     visibility = ["//visibility:private"],
     deps = [
         ":libusb_config",
@@ -68,7 +85,10 @@ cc_library(
     name = "libusb_core",
     srcs = glob(["libusb/*.c"]),
     linkopts = select({
-        "@platforms//os:windows": ["-DEFAULTLIB:AdvAPI32.Lib"],
+        "@platforms//os:windows": [
+            "-DEFAULTLIB:AdvAPI32.Lib",
+            "-DEFAULTLIB:User32.Lib",
+        ],
         "//conditions:default": [],
     }),
     target_compatible_with = select({
