@@ -1,6 +1,6 @@
 module(name = "rules_libusb_basic_example")
 
-bazel_dep(name = "rules_cc", version = "0.0.9")
+bazel_dep(name = "rules_cc", version = "0.0.10")
 
 bazel_dep(name = "rules_libusb")
 
