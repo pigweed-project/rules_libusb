@@ -1,0 +1,14 @@
+# Enable platform-specific configs so we can force Linux to use
+# the vendored toolchain.
+common --enable_platform_specific_config
+
+# Do not attempt to configure an autodetected (local) toolchain for Linux. We
+# vendor the Linux toolchain to ensure <linux/netlink.h> is available.
+common:linux --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+
+# Silence all C/C++ warnings in external code.
+#
+# Note that this will not silence warnings from external headers #include'd in
+# first-party code.
+common --per_file_copt=external/.*@-w
+common --host_per_file_copt=external/.*@-w

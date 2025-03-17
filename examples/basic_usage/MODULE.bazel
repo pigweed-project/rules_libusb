@@ -13,3 +13,15 @@ local_path_override(
 
 libusb = use_extension("@rules_libusb//:extensions.bzl", "libusb")
 use_repo(libusb, "libusb")
+
+# This is all just to vendor a Linux toolchain+sysroot for CI builds.
+bazel_dep(name = "pigweed", version = "0.0.1", dev_dependency = True)
+git_override(
+    module_name = "pigweed",
+    commit = "236c292ed9f51681fcd044bf2646aa42b0266943",
+    remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
+)
+register_toolchains(
+    "@pigweed//pw_toolchain/host_clang:host_cc_toolchain_linux",
+    dev_dependency = True,
+)
