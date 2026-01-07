@@ -3,6 +3,9 @@
 A small wrapper Bazel module that builds libusb from sources. Supports Windows,
 macOS, and Linux.
 
+This wrapper is maintained by [Pigweed](https://pigweed.dev/). Please file bug
+reports at https://issues.pigweed.dev/.
+
 ## Getting Started
 
 At this time, rules_libusb only supports bzlmod projects. Legacy `WORKSPACE`
