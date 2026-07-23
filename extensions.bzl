@@ -71,12 +71,20 @@ def _libusb_impl(module_ctx):
         if _version_less_than(v, version_to_use):
             fail("Minimum supported libusb version for", min_versions[version_to_use], "is", version_to_use, "but", max_versions[v], "require at most", v)
 
+    sha256 = _KNOWN_RELEASE_HASHES.get(version_to_use, None)
+    if not sha256:
+        fail(
+            "libusb version {} has no pinned SHA-256; add it to _KNOWN_RELEASE_HASHES".format(
+                version_to_use,
+            ),
+        )
+
     http_archive(
         name = "libusb",
         urls = ["https://github.com/libusb/libusb/releases/download/v{}/libusb-{}.tar.bz2".format(version_to_use, version_to_use)],
         build_file = "@rules_libusb//:libusb.BUILD",
         strip_prefix = "libusb-" + version_to_use,
-        sha256 = _KNOWN_RELEASE_HASHES.get(version_to_use, None),
+        sha256 = sha256,
     )
 
 libusb = module_extension(
