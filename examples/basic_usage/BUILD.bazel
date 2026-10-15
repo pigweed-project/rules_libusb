@@ -17,6 +17,7 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 # This is enumerated as a test to ensure it is run and doesn't crash/fail.
 cc_test(
     name = "example",
+    size = "small",
     srcs = ["main.cc"],
     deps = ["@libusb"],
 )

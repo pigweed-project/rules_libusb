@@ -1,30 +1,39 @@
+# Copyright 2026 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Bzlmod module extension for fetching libusb release archives."""
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-# This just silences warnings about canonical reproducible forms.
-_KNOWN_RELEASE_HASHES = {
-    "1.0.20-rc1": "914c4c66f4d6582fb19afc92aa8274f11e0745a93a02593e3bcc2ee7c6048e23",
-    "1.0.20": "cb057190ba0a961768224e4dc6883104c6f945b2bf2ef90d7da39e7c1834f7ff",
-    "1.0.21": "7dce9cce9a81194b7065ee912bcd55eeffebab694ea403ffb91b67db66b1824b",
-    "1.0.22": "75aeb9d59a4fdb800d329a545c2e6799f732362193b465ea198f2aa275518157",
-    "1.0.23": "db11c06e958a82dac52cf3c65cb4dd2c3f339c8a988665110e0d24d19312ad8d",
-    "1.0.24": "7efd2685f7b327326dcfb85cee426d9b871fd70e22caa15bb68d595ce2a2b12a",
-    "1.0.25": "8a28ef197a797ebac2702f095e81975e2b02b2eeff2774fa909c78a74ef50849",
-    "1.0.26": "12ce7a61fc9854d1d2a1ffe095f7b5fac19ddba095c259e6067a46500381b5a5",
-    "1.0.27": "ffaa41d741a8a3bee244ac8e54a72ea05bf2879663c098c82fc5757853441575",
-}
-
-def _version_parts(ver_string):
+def version_parts(ver_string):
     """Converts version parts into a list of integers.
 
     Every version integer list will be four parts to ensure that release
     candidates are properly handled. Final releases are akin to a
     release candidate 9999999999.
+
+    Args:
+      ver_string: Version string to parse (e.g. "1.0.20" or "1.0.20-rc1").
+
+    Returns:
+      A 4-element list of integers representing the parsed version components.
     """
     parts = ver_string.split(".")
     if "-" in parts[-1]:
         rc = parts[-1].split("-")
         if len(rc) > 2:
-            fail("Unknown version string format:", ver_string)
+            fail("Unknown version string format: {}".format(ver_string))
         parts[-1] = rc[0]
         parts.append(rc[1].lower().lstrip("rc"))
     else:
@@ -32,27 +41,69 @@ def _version_parts(ver_string):
     return [int(p) for p in parts]
 
 def _version_less_than(a, b):
-    a_parts = _version_parts(a)
-    b_parts = _version_parts(b)
-    for i in range(len(a_parts)):
-        if a_parts[i] == b_parts[i]:
-            continue
-        return a_parts[i] < b_parts[i]
+    return version_parts(a) < version_parts(b)
 
-    # Must be equal.
-    return False
+def _add_release_hash(known_release_hashes, hash_sources, version, sha256, source):
+    sha256 = sha256.removeprefix("sha256:")
+    existing = known_release_hashes.get(version)
+    if existing and existing != sha256:
+        fail(
+            "Conflicting SHA-256 hashes for libusb version {}: {} (from {}) vs {} (from {})".format(
+                version,
+                existing,
+                hash_sources[version],
+                sha256,
+                source,
+            ),
+        )
+    known_release_hashes[version] = sha256
+    hash_sources[version] = source
 
 def _libusb_impl(module_ctx):
-    """ Fetches libusb sources as requested by Bazel modules.
+    """Fetches libusb sources as requested by Bazel modules.
 
     Intended behavior:
         The minimum supported version is selected, per usual bzlmod behavior.
+
+    Args:
+      module_ctx: The module extension context.
     """
-    root_module = True
+    default_versions_file = Label("@rules_libusb//:versions.json")
+    known_release_hashes = {}
+    hash_sources = {}
+    for ver, sha in json.decode(module_ctx.read(default_versions_file)).items():
+        _add_release_hash(
+            known_release_hashes,
+            hash_sources,
+            ver,
+            sha,
+            str(default_versions_file),
+        )
+
     min_versions = {}
     max_versions = {}
     for module in module_ctx.modules:
         for release in module.tags.source_release:
+            if release.versions_file != None:
+                custom_versions = json.decode(
+                    module_ctx.read(release.versions_file),
+                )
+                for ver, sha in custom_versions.items():
+                    _add_release_hash(
+                        known_release_hashes,
+                        hash_sources,
+                        ver,
+                        sha,
+                        str(release.versions_file),
+                    )
+            for ver, sha in release.versions.items():
+                _add_release_hash(
+                    known_release_hashes,
+                    hash_sources,
+                    ver,
+                    sha,
+                    "module '{}' versions".format(module.name),
+                )
             if release.min_version:
                 if release.min_version not in min_versions:
                     min_versions[release.min_version] = []
@@ -63,27 +114,39 @@ def _libusb_impl(module_ctx):
                 max_versions[release.max_version].append(module.name)
 
     version_to_use = None
-    for v, m in min_versions.items():
+    for v in min_versions:
         if version_to_use == None or _version_less_than(version_to_use, v):
             version_to_use = v
 
-    for v, m in max_versions.items():
+    for v in max_versions:
         if _version_less_than(v, version_to_use):
-            fail("Minimum supported libusb version for", min_versions[version_to_use], "is", version_to_use, "but", max_versions[v], "require at most", v)
+            fail(
+                "Minimum supported libusb version for {} is {} but {} require at most {}".format(
+                    min_versions[version_to_use],
+                    version_to_use,
+                    max_versions[v],
+                    v,
+                ),
+            )
 
-    sha256 = _KNOWN_RELEASE_HASHES.get(version_to_use, None)
+    sha256 = known_release_hashes.get(version_to_use, None)
     if not sha256:
         fail(
-            "libusb version {} has no pinned SHA-256; add it to _KNOWN_RELEASE_HASHES".format(
+            "libusb version {} has no pinned SHA-256; specify `versions` in `libusb.source_release()`".format(
                 version_to_use,
             ),
         )
 
     http_archive(
         name = "libusb",
-        urls = ["https://github.com/libusb/libusb/releases/download/v{}/libusb-{}.tar.bz2".format(version_to_use, version_to_use)],
+        urls = [
+            "https://github.com/libusb/libusb/releases/download/v{}/libusb-{}.tar.bz2".format(
+                version_to_use,
+                version_to_use,
+            ),
+        ],
         build_file = "@rules_libusb//:libusb.BUILD",
-        strip_prefix = "libusb-" + version_to_use,
+        strip_prefix = "libusb-{}".format(version_to_use),
         sha256 = sha256,
     )
 
@@ -95,10 +158,17 @@ libusb = module_extension(
             doc = "Controls the source code version to use when building libusb.",
             attrs = {
                 "min_version": attr.string(
-                    doc = "Minimum supported version of libusb required",
+                    doc = "Minimum supported version of libusb required.",
                 ),
                 "max_version": attr.string(
-                    doc = "Maximum supported version of libusb required",
+                    doc = "Maximum supported version of libusb required.",
+                ),
+                "versions": attr.string_dict(
+                    doc = "Optional mapping of libusb version strings to SHA-256 digests, allowing consumers to supply hashes for releases not yet listed in `versions.json`.",
+                ),
+                "versions_file": attr.label(
+                    allow_single_file = True,
+                    doc = "Optional JSON file mapping libusb version strings to SHA-256 digests.",
                 ),
             },
         ),

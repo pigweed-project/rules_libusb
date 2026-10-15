@@ -17,20 +17,20 @@
 #include "libusb.h"
 
 int main() {
-    libusb_device** devs;
-    if (libusb_init(nullptr) < 0) {
-        printf("Error: Failed to initialize libusb\n");
-        return 1;
-    }
+  libusb_device** devs;
+  if (libusb_init(nullptr) < 0) {
+    printf("Error: Failed to initialize libusb\n");
+    return 1;
+  }
 
-    ssize_t device_count = libusb_get_device_list(nullptr, &devs);
-    if (device_count < 0) {
-        printf("Error: Failed to enumerate devices\n");
-        return 1;
-    }
-    printf("%d devices attached\n", static_cast<int>(device_count));
+  ssize_t device_count = libusb_get_device_list(nullptr, &devs);
+  if (device_count < 0) {
+    printf("Error: Failed to enumerate devices\n");
+    return 1;
+  }
+  printf("%d devices attached\n", static_cast<int>(device_count));
 
-    libusb_free_device_list(devs, 1);
-    libusb_exit(nullptr);
-    return 0;
+  libusb_free_device_list(devs, 1);
+  libusb_exit(nullptr);
+  return 0;
 }

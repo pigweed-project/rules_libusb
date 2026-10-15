@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(_WIN32) | defined(_WIN64)
+#if defined(_WIN32) || defined(_WIN64)
 
 #if defined(_MSC_VER)
 #include "msvc/config.h"
-#endif // defined(_MSC_VER )
+#endif  // defined(_MSC_VER)
 
 // TODO: MinGW-W64 and clang support.
 
@@ -31,10 +31,13 @@
 #elif defined(__APPLE__)
 
 #include "Xcode/config.h"
+#if __has_include(<IOKit/usb/IOUSBHostFamilyDefinitions.h>)
+#define HAVE_IOKIT_USB_IOUSBHOSTFAMILYDEFINITIONS_H 1
+#endif
 
 #define _RULES_LIBUSB_OS_SUPPORTED 1
 
-#endif  // defined(_WIN32) | defined(_WIN64)
+#endif  // defined(_WIN32) || defined(_WIN64)
 
 #if !defined(_RULES_LIBUSB_OS_SUPPORTED) || !_RULES_LIBUSB_OS_SUPPORTED
 #error Unsupported configuration, either contribute to rules_libusb, or build your own `config.h`.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define DEFAULT_VISIBILITY __attribute__ ((visibility ("default")))
+#define DEFAULT_VISIBILITY __attribute__((visibility("default")))
 #define ENABLE_LOGGING 1
 #define HAVE_ASM_TYPES_H 1
 #define HAVE_CLOCK_GETTIME 1
@@ -32,6 +32,8 @@
 #define HAVE_STDLIB_H 1
 #define HAVE_STRINGS_H 1
 #define HAVE_STRING_H 1
+#define HAVE_STRUCT_TIMESPEC 1
+#define HAVE_SYSLOG 1
 #define HAVE_SYS_STAT_H 1
 #define HAVE_SYS_TIME_H 1
 #define HAVE_SYS_TYPES_H 1
@@ -53,7 +55,7 @@
 #define HAVE_SYS_SOCKET_H 1
 #define HAVE_GETTIMEOFDAY 1
 
-#define PRINTF_FORMAT(a, b) __attribute__ ((__format__ (__printf__, a, b)))
+#define PRINTF_FORMAT(a, b) __attribute__((__format__(__printf__, a, b)))
 #define STDC_HEADERS 1
 
 #define _GNU_SOURCE 1
@@ -67,11 +69,13 @@
 #if defined(HAVE_LIBUDEV) && HAVE_LIBUDEV
 // Check that libudev header can be found.
 #if !__has_include(<libudev.h>)
-#error "--@rules_libusb//:linux_backend=udev enabled, but no <libudev.h> header found."
+#error \
+    "--@rules_libusb//:linux_backend=udev enabled, but no <libudev.h> header found."
 #endif  // !__has_include(<libudev.h>)
 #else
 // Check that netlink header can be found.
 #if !__has_include(<linux/netlink.h>)
-#error "--@rules_libusb//:linux_backend=netlink enabled, but no <linux/netlink.h> header found."
-#endif  // !__has_include(<libudev.h>)
+#error \
+    "--@rules_libusb//:linux_backend=netlink enabled, but no <linux/netlink.h> header found."
+#endif  // !__has_include(<linux/netlink.h>)
 #endif  // defined(HAVE_LIBUDEV) && HAVE_LIBUDEV

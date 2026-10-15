@@ -1,26 +1,46 @@
+# Copyright 2026 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 module(name = "rules_libusb_basic_example")
 
-bazel_dep(name = "rules_cc", version = "0.0.10")
-
+bazel_dep(name = "rules_cc", version = "0.2.17")
 bazel_dep(name = "rules_libusb")
 
-# DO NOT copy this into your project. This allows this repository to reference
-# itself.
+# DO NOT copy this into your project. This allows this submodule to reference
+# the main module
 local_path_override(
     module_name = "rules_libusb",
     path = "../..",
 )
 
 libusb = use_extension("@rules_libusb//:extensions.bzl", "libusb")
+libusb.source_release(
+    min_version = "1.0.30",
+    versions = {
+        "1.0.30": "fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf",
+    },
+)
 use_repo(libusb, "libusb")
 
 # This is all just to vendor a Linux toolchain+sysroot for CI builds.
 bazel_dep(name = "pigweed", version = "0.0.1", dev_dependency = True)
 git_override(
     module_name = "pigweed",
-    commit = "236c292ed9f51681fcd044bf2646aa42b0266943",
+    commit = "ee5b7a522470ee17187f3dc0a3f6e0ad619f6596",
     remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
 )
+
 register_toolchains(
     "@pigweed//pw_toolchain/host_clang:host_cc_toolchain_linux",
     dev_dependency = True,
